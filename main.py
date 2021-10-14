@@ -10,19 +10,35 @@ from datetime import datetime
 URL = "http://books.toscrape.com/"
 
 
-def extract_categories():
+def scrape_categories():
+    """ Scrape categories URLs from the nav list books
+
+    Returns:
+        categories_urls_list (list): URLs of all categories
+
+    """
+
     r = requests.get(URL)
     soup = BeautifulSoup(r.content, "html.parser")
-    categories_list = []
-    categories_tags = soup.find_all("a", href=re.compile("/category/books/"))
-    for tag in categories_tags:
-        categories_list.append(URL + tag["href"])
-    print(f"{len(categories_list)} catégories répertoriées.")
+    categories_urls_list = []
+    categories_nav_list = soup.find(class_="nav nav-list").ul.find_all("a")
+    for category in categories_nav_list:
+        categories_urls_list.append(URL + category["href"])
+    print(f"{len(categories_urls_list)} catégories répertoriées.")
 
-    return categories_list
+    return categories_urls_list
 
 
-def extract_books_from_category(category_url_index):
+def scrape_books_from_category(category_url_index):
+    """ Scrape URLs of all books of a category (index + additional pages)
+
+    Args:
+        category_url_index (str): url of the index page (of a dedicated category)
+
+    Returns:
+        books_urls_list (list): URLs of all books of the category
+    """
+
     r = requests.get(category_url_index)
     soup = BeautifulSoup(r.content, 'html.parser')
     category_name = soup.find(class_="page-header action").find("h1").string
@@ -37,78 +53,97 @@ def extract_books_from_category(category_url_index):
     pprint(f"{len(category_url_list)} pages to be extracted in {category_name} (including index.html).")
 
     # Initialize list of books in the category
-    category_books_list = []
+    books_urls_list = []
     for category_url in category_url_list:
         print(f"{category_url} in progress...")
         r = requests.get(category_url)
         soup = BeautifulSoup(r.content, "html.parser")
         for tag in soup.find_all(href=re.compile("index"), title=True):
-            category_books_list.append(tag["href"].replace("../../..", "http://books.toscrape.com/catalogue"))
-    print(f"{len(category_books_list)} books found in {category_name}.")
+            books_urls_list.append(tag["href"].replace("../../..", "http://books.toscrape.com/catalogue"))
+    print(f"{len(books_urls_list)} books found in {category_name}.")
+    pprint(books_urls_list)
 
-    return category_books_list
+    return books_urls_list
 
 
-def extract_book_information(book_page_url):
-    book_information = {
+def scrape_book_data(book_page_url):
+    """ Scrape data from book index page
+
+    Args:
+        book_page_url (str): index page of a book
+
+    Returns:
+        book_data (dict): data of the book (UPC, price excluding tax,...)
+
+    """
+    book_data = {
         "product_page_url": book_page_url
     }
     r = requests.get(book_page_url)
     if r.status_code != 200:
-        print("Ping KO")
+        print(f"Ping {book_page_url} KO.")
         return
 
     soup = BeautifulSoup(r.content, 'html.parser')
 
-    # Extract UPC
-    upc = soup.find("th", string="UPC").next_element.next_element.string
-    book_information["UPC"] = upc
+    # Identify product table in the page
+    product_table = soup.find(class_="table table-striped")
+    product_information = product_table.find_all("td")
 
-    # Extract price excluding tax
-    price_excluding_tax = soup.find("th", string="Price (excl. tax)").next_element.next_element.string
-    book_information["price_excluding_tax"] = price_excluding_tax
+    # Extract UPC from product table
+    book_data["UPC"] = product_information[0].string
 
-    # Extract price including tax
-    price_including_tax = soup.find("th", string="Price (incl. tax)").next_element.next_element.string
-    book_information["price_including_tax"] = price_including_tax
+    # Extract price excluding tax from product table
+    book_data["price_excluding_tax"] = product_information[2].string
 
-    # Extract availability
-    number_available = soup.find("th", string="Availability").next_element.next_element.next_element.string
-    book_information["number_available"] = "".join(x for x in number_available if x.isdigit())
+    # Extract price including tax from product table
+    book_data["price_including_tax"] = product_information[3].string
+
+    # Extract availability from product table
+    book_data["number_available"] = "".join(x for x in product_information[5].string if x.isdigit())
 
     # Extract Title
-    title = soup.find("li", class_="active").string
-    book_information["title"] = title
+    title = soup.find(class_="col-sm-6 product_main").h1.string
 
     # Extract review rating
     # Using tag's attributes to look for the rate, then convert to integer (using text2num)
     tag = soup.find("p", re.compile("star-rating")).attrs["class"][1]
-    book_information["review_rating"] = text2num(tag.lower(), "en")
+    book_data["review_rating"] = text2num(tag.lower(), "en")
 
     # Extract Category
-    category = soup.find("a", href=re.compile("/category/books/")).string
-    book_information["category"] = category
+    breadcrumb = soup.find(class_="breadcrumb")
+    links = breadcrumb.find_all("a")
+    book_data["category"] = links[2].string
 
     # Extract Product Description
     product_description = soup.find("p", class_="")
     # if tag not found / to implement for all extracts ?
     # replace ; by . to avoid Excel issue in csv file - to be checked
-    book_information["product_description"] = product_description.string.replace(";", ".") if product_description else ""
+    book_data["product_description"] = product_description.string.replace(";", ".") \
+        if product_description else ""
 
     # Extract Image URL
     image_url = soup.find(alt=title).attrs["src"]
     image_url = image_url.replace("../../", URL)
-    book_information["image_url"] = image_url
+    book_data["image_url"] = image_url
 
     # Download image
     download_pic(image_url, title.replace("/", "-"))
 
-    # pprint(f"{title} extracted")
-
-    return book_information
+    return book_data
 
 
-def create_csv_file(category_books_list, file_name):
+def create_csv_file(category_all_books_data, file_name):
+    """ Create a csv file
+
+    Args:
+        category_all_books_data (list): list of X dictionnaries, one dictionnay gathering data from one book
+        file_name (str): name of the CSV file (= category)
+
+    Returns:
+        empty list
+
+    """
     p = Path.cwd()
     p = p / "CSV"
     p.mkdir(exist_ok=True)
@@ -119,42 +154,39 @@ def create_csv_file(category_books_list, file_name):
     with open(file_to_open, "w", newline="") as output_file:
         writer = csv.DictWriter(output_file, fieldnames=headers)
         writer.writeheader()
-        writer.writerows(category_books_list)
+        writer.writerows(category_all_books_data)
         print(f"Fichier {file_name} créé sous /CSV.")
+
+    return []
 
 
 def download_pic(image_url, file_name):
+
+    # TO DO - Add a check if path already exists
     p = Path.cwd()
     p = p / "IMG"
     p.mkdir(exist_ok=True)
     image_name = f"{file_name}.jpg"
     file_to_create = p / image_name
     image = requests.get(image_url).content
-    with open(file_to_create, "wb") as handler:
-        handler.write(image)
+    with open(file_to_create, "wb") as f:
+        f.write(image)
 
 
 def main():
-    categories_list = extract_categories()
     nb_books = 0
     start_time = datetime.now()
-    for category_url_index in categories_list:
-        category_all_books_information = []
-        category_books = extract_books_from_category(category_url_index)
+
+    for category_url_index in scrape_categories():
+        category_all_books_data = []
+        category_books = scrape_books_from_category(category_url_index)
         for book in category_books:
-            category_all_books_information.append(extract_book_information(book))
-        nb_books += len(category_all_books_information)
-        create_csv_file(category_all_books_information, category_all_books_information[0]["category"])
-    print(f"{nb_books} books found.")
+            category_all_books_data.append(scrape_book_data(book))
+        nb_books += len(category_all_books_data)
+        create_csv_file(category_all_books_data, category_all_books_data[0]["category"])
+
+    print(f"{nb_books} books extracted.")
     print(datetime.now() - start_time)
 
 
 main()
-
-# pprint(extract_book_information("http://books.toscrape.com/catalogue/shtum_733/index.html"))
-# liste = []
-# liste.append(extract_book_information("http://books.toscrape.com/catalogue/shtum_733/index.html"))
-# pprint(liste)
-# create_csv_file(liste, "test")
-
-# download_pic("https://books.toscrape.com/media/cache/63/62/63623a0b014b1f26e49aa61786e6e708.jpg", "test")
