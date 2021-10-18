@@ -9,6 +9,7 @@ Scraping from "[Books to Scrape](https://books.toscrape.com/index.html)" web sit
 
 python3.9 -m venv env
 source env/bin/activate
+git clone https://github.com/XavierCoulon/OC-P1-BookToScrape.git
 pip install -r requirements.txt
 python main.py
 

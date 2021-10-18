@@ -151,7 +151,7 @@ def create_csv_file(category_all_books_data, file_name):
     file_to_open = p / file_name
     headers = ["UPC", "product_page_url", "price_excluding_tax", "price_including_tax", "number_available", "title",
                "review_rating", "category", "product_description", "image_url"]
-    with open(file_to_open, "w", newline="") as output_file:
+    with open(file_to_open, "w", newline="", encoding="utf-8-sig") as output_file:
         writer = csv.DictWriter(output_file, fieldnames=headers)
         writer.writeheader()
         writer.writerows(category_all_books_data)

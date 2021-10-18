@@ -27,5 +27,4 @@ def main():
     print(datetime.now() - start_time)
 
 
-# main()
-pprint(scrape_book_data("https://books.toscrape.com/catalogue/its-only-the-himalayas_981/index.html"))
+main()
