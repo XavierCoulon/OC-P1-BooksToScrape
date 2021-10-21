@@ -7,6 +7,7 @@ from text_to_num import text2num
 from bs4 import BeautifulSoup
 
 
+
 URL = "http://books.toscrape.com/"
 
 
