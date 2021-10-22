@@ -9,10 +9,10 @@ Script to scrape data (including images) from all books - all categories. Creati
 
 ```bash
 
+git clone https://github.com/XavierCoulon/OC-P2-BooksToScrape.git
+cd OC-P2-BooksToScrape 
 python3.9 -m venv env
 source env/bin/activate
-git clone https://github.com/XavierCoulon/OC-P1-BookToScrape.git
-cd OC-P1-BookToScrape 
 pip install -r requirements.txt
 python main.py
 

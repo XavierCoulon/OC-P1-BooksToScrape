@@ -2,19 +2,17 @@ from module import *
 from datetime import datetime
 from tqdm import tqdm
 
-# master only
-
 
 def main():
-    """ Main
+    """ Main script
 
     1. Scrape all categories from index page
     2. For each category (all pages of the category):
-        Scrape all books,
+        a. Scrape all books,
             For each book,
-                Scrape data,
-                Download pic,
-        Create CSV file
+                i. Scrape data,
+                ii. Download pic,
+        b. Create CSV file
 
     """
 
