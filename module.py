@@ -23,11 +23,9 @@ def get_soup(url_address):
 
     r = requests.get(url_address)
     if r.status_code != 200:
-        print(f"Ping {url_address} KO.")
-        return
-    soup = BeautifulSoup(r.content, "html.parser")
+        return print(f"Ping {url_address} KO.")
 
-    return soup
+    return BeautifulSoup(r.content, "html.parser")
 
 
 def scrape_categories():
@@ -38,10 +36,8 @@ def scrape_categories():
 
     """
 
-    categories_urls_list = []
     categories_nav_list = get_soup(URL).find(class_="nav nav-list").ul.find_all("a")
-    for category in categories_nav_list:
-        categories_urls_list.append(URL + category.get("href"))
+    categories_urls_list = [(URL + category.get("href")) for category in categories_nav_list]
     print(f"{len(categories_urls_list)} catégories répertoriées.")
 
     return categories_urls_list
@@ -103,13 +99,13 @@ def scrape_book_data(book_page_url):
     product_information = product_table.find_all("td")
 
     # Extract UPC from product table
-    book_data["UPC"] = product_information[0].string
+    book_data["UPC"] = str(product_information[0].string)
 
     # Extract price excluding tax from product table
-    book_data["price_excluding_tax"] = product_information[2].string
+    book_data["price_excluding_tax"] = str(product_information[2].string)
 
     # Extract price including tax from product table
-    book_data["price_including_tax"] = product_information[3].string
+    book_data["price_including_tax"] = str(product_information[3].string)
 
     # Extract availability from product table
     book_data["number_available"] = "".join(x for x in product_information[5].string if x.isdigit())
@@ -126,7 +122,8 @@ def scrape_book_data(book_page_url):
     # Extract Category
     breadcrumb = soup.find(class_="breadcrumb")
     links = breadcrumb.find_all("a")
-    book_data["category"] = links[2].string
+    # Why needed to apply str ?!?
+    book_data["category"] = str(links[2].string)
 
     # Extract Product Description
     product_description = soup.find("p", class_="")
