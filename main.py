@@ -3,7 +3,7 @@ from datetime import datetime
 from tqdm import tqdm
 
 
-def main():
+def run():
     """ Main script
 
     1. Scrape all categories from index page
@@ -31,4 +31,5 @@ def main():
     print(datetime.now() - start_time)
 
 
-main()
+if __name__ == "__main__":
+    run()
