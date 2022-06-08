@@ -1,9 +1,13 @@
 import sys
+import main
 from PySide6.QtWidgets import QApplication, QWidget, QPushButton, QFileDialog, QLabel, QVBoxLayout
-from main import run
+from pathlib import Path
 
 
 class App(QWidget):
+
+	singleton = None
+
 	def __init__(self):
 		super().__init__()
 		layout = QVBoxLayout()
@@ -15,26 +19,23 @@ class App(QWidget):
 		btn_browse.clicked.connect(self.get_directory)
 		layout.addWidget(btn_browse)
 
-		self.field = QLabel()
+		self.field = QLabel(str(Path.cwd()))
 		self.field.setStyleSheet("border: 1px solid blue;")
 		layout.addWidget(self.field)
 
 		btn_launch = QPushButton("2. Lancer le scraping")
-		btn_launch.clicked.connect(run)
+		btn_launch.clicked.connect(main.run)
 		layout.addWidget(btn_launch)
 
 	def get_directory(self):
-		response = QFileDialog.getExistingDirectory(
-			self,
-			caption="Sélectionnez un répertoire",
-		)
-		self.fill_field(response)
-
-	def fill_field(self, value):
-		self.field.setText(value)
+		response = QFileDialog.getExistingDirectory(self)
+		self.field.setText(response)
+		return self.field.text()
 
 
-app = QApplication(sys.argv)
-win = App()
-win.show()
-app.exec()
+if __name__ == "__main__":
+	appli = QApplication(sys.argv)
+	win = app.App()
+	app.App.singleton = win
+	win.show()
+	appli.exec()

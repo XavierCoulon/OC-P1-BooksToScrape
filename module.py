@@ -1,7 +1,7 @@
 import csv
 import re
 import requests
-from pprint import pprint
+
 from pathlib import Path
 from text_to_num import text2num
 from bs4 import BeautifulSoup
@@ -54,14 +54,12 @@ def scrape_books_from_category(category_url_index):
     """
 
     soup = get_soup(category_url_index)
-
-    # Scrape the name of the category
     category_name = soup.find(class_="page-header action").find("h1").string
 
     # Seek for the number of additional pages to scrape
     number_additional_pages = int(soup.find(class_="form-horizontal").find("strong").string) // 20
 
-    # Initialize list of category's urls, adding index.html
+    # Initialize list of category's urls, adding index
     category_url_list = [category_url_index]
     for i in range(number_additional_pages):
         category_url_list.append(category_url_index.replace("index.html", f"page-{i + 2}.html"))
@@ -70,10 +68,13 @@ def scrape_books_from_category(category_url_index):
     # Initialize list of books in the category
     books_urls_list = []
     for category_url in category_url_list:
-        soup = get_soup(category_url)
+        # print(f"{category_url} in progress...")
+        r = requests.get(category_url)
+        soup = BeautifulSoup(r.content, "html.parser")
         for tag in soup.find_all(href=re.compile("index"), title=True):
             books_urls_list.append(tag["href"].replace("../../..", "http://books.toscrape.com/catalogue"))
     print(f"{len(books_urls_list)} book(s) found in {category_name}.")
+    # pprint(books_urls_list)
 
     return books_urls_list
 
@@ -112,7 +113,6 @@ def scrape_book_data(book_page_url):
 
     # Extract Title
     title = soup.find(class_="col-sm-6 product_main").h1.string
-    book_data["title"] = title
 
     # Extract review rating
     # Using tag's attributes to look for the rate, then convert to integer (using text2num)
@@ -136,11 +136,9 @@ def scrape_book_data(book_page_url):
     image_url = soup.find(alt=title).attrs["src"]
     image_url = image_url.replace("../../", URL)
     book_data["image_url"] = image_url
-    if image_url == "":
-        print(f"{title} in {book_data['category']}")
-        return
+
     # Download image
-    download_pic(image_url, title.replace("/", "-") + "-" + book_data["UPC"])
+    download_pic(image_url, title.replace("/", "-"))
 
     # print(f"{title} scraped...")
 
@@ -149,11 +147,9 @@ def scrape_book_data(book_page_url):
 
 def create_csv_file(category_all_books_data, file_name):
     """ Create a csv file, and save it in the directory CSV (will be created if does not exist)
-
     Args:
         category_all_books_data (list): list of X dictionnaries, one dictionnay gathering data from one book
         file_name (str): name of the CSV file (= category)
-
     """
 
     p = Path.cwd()
@@ -173,11 +169,9 @@ def create_csv_file(category_all_books_data, file_name):
 def download_pic(image_url, file_name):
     """ Download an image in the directory IMG
         (will be created if does not exist)
-
     Args:
         image_url (str): url of the image
         file_name (str): name of the image
-
     """
 
     p = Path.cwd()
@@ -190,23 +184,5 @@ def download_pic(image_url, file_name):
         f.write(image)
 
 
-# __name__ to test only a sample:
-# 1 . Scrape all catogories,
-# 2 . Scrape all books from 1 category,
-# 3. Scrape data for 1 book
-# 4. Save csv file for dedicated book (__name__.csv)
-# 4. Download pic for dedicated book (__name__jpg)
-
 if __name__ == "__main__":
-    pprint(scrape_categories())
-    print("""\n""")
-    pprint(scrape_books_from_category("https://books.toscrape.com/catalogue/category/books/fantasy_19/index.html"))
-    print("""\n""")
-    book_test = scrape_book_data("https://books.toscrape.com/catalogue/chase-me-paris-nights-2_977/index.html")
-    print("############## BOOK DATA ##############")
-    pprint(book_test)
-    print("""\n""")
-    liste = [book_test]
-    create_csv_file(liste, "__name__")
-    print("""\n""")
-    download_pic("https://books.toscrape.com/media/cache/6c/84/6c84fcf7a53b02b6e763de7272934842.jpg", "__name__")
+    pass
