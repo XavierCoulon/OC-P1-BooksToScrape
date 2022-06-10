@@ -1,4 +1,5 @@
 import re
+import requests
 
 
 from models.soup import Soup
@@ -8,33 +9,22 @@ from models.url import URL
 
 class Book:
 
-	def __init__(
-		self,
-		product_page_url=None,
-		upc=None,
-		price_excluding_tax=None,
-		price_including_tax=None,
-		number_available=None,
-		title=None,
-		review_rating=None,
-		category=None,
-		product_description=None,
-		image_url=None,
-		image_name=None,
-	):
-		self.product_page_url = product_page_url
-		self.upc = upc
-		self.price_excluding_tax = price_excluding_tax
-		self.price_including_tax = price_including_tax
-		self.number_available = number_available
-		self.title = title
-		self.review_rating = review_rating
-		self.category = category
-		self.product_description = product_description
-		self.image_url = image_url
-		self.image_name = image_name
+	product_page_url = None,
+	upc = None
+	price_excluding_tax = None
+	price_including_tax = None
+	number_available = None
+	title = None
+	review_rating = None
+	category = None
+	product_description = None
+	image_url = None
+	image_name = None
 
-	def get_book_data(self):
+	def __init__(self, product_page_url):
+		self.product_page_url = product_page_url
+
+	def load_data(self):
 		soup = Soup(str(self.product_page_url)).get_soup()
 
 		# Identify product table in the page
@@ -86,14 +76,11 @@ class Book:
 		# Set file_name
 		self.image_name = self.title.replace("/", "-") + "-" + self.upc
 
-	def download_pic(self):
+	def download_pic(self, folder):
 
-		p = Path.cwd()
-		p = p / "IMG"
-		p.mkdir(exist_ok=True)
-		image_name = f"{file_name}.jpg"
-		file_to_create = p / image_name
-		image = requests.get(image_url).content
+		image_name = f"{self.image_name}.jpg"
+		file_to_create = folder / image_name
+		image = requests.get(self.image_url).content
 		with open(file_to_create, "wb") as f:
 			f.write(image)
 
