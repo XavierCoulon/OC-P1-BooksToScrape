@@ -4,7 +4,7 @@ import requests
 
 from models.soup import Soup
 from text_to_num import text2num
-from models.url import URL
+from models.constants import URL
 
 
 class Book:
@@ -24,8 +24,8 @@ class Book:
 	def __init__(self, product_page_url):
 		self.product_page_url = product_page_url
 
-	def load_data(self):
-		soup = Soup(str(self.product_page_url)).get_soup()
+	def get_data(self):
+		soup = Soup(str(self.product_page_url)).get()
 
 		# Identify product table in the page
 		product_table = soup.find(class_="table table-striped")
@@ -61,7 +61,7 @@ class Book:
 		# Extract Product Description
 		product_description = soup.find("p", class_="")
 		# if tag not found / to implement for all extracts ?
-		# replace ; by . to avoid Excel issue in csv file - to be checked
+		# replace ; by . to avoid Excel issue in create_csv file - to be checked
 		self.product_description = product_description.string.replace(";", ".") if product_description else ""
 		# book_data["product_description"] = product_description.string if product_description else ""
 
