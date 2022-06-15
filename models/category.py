@@ -3,38 +3,38 @@ import csv
 
 from models.soup import Soup
 from models.book import Book
-from models.constants import HEADERS, CSV_FOLDER
+from models.constants import HEADERS, CSV_FOLDER, URL
 
 
 class Category:
-	main_url = None
+	name = None
 	soup = None
+	index_url = None
 	additional_urls = []
 	books = []
-	name = None
 
-	def __init__(self, main_url):
-		self.main_url = main_url
-		self.soup = Soup(self.main_url).get()
+	def __init__(self, index_url):
+		self.index_url = index_url
+		self.soup = Soup(self.index_url).get()
 
 	def get_data(self):
 
 		# Get name
 		self.name = self.soup.find(class_="page-header action").find("h1").string
 
-		# Seek for the number of additional pages to scrape
+		# Seek for the number of additional pages to run
 		number_additional_pages = int(self.soup.find(class_="form-horizontal").find("strong").string) // 20
 
-		# Initialize list of category's urls, adding index.html
-		for i in range(number_additional_pages):
-			self.additional_urls.append(self.main_url.replace("index.html", f"page-{i + 2}.html"))
+		# Build additional_urls from number_additional_pages
+		self.additional_urls = [
+			self.index_url.replace("index.html", f"page-{i + 2}.html") for i in range(number_additional_pages)]
 		print(f"{len(self.additional_urls) + 1} pages to be extracted in {self.name} (including index.html).")
 
 		# Initialize list of books in the category
-		for url in self.additional_urls + [self.main_url]:
+		for url in self.additional_urls + [self.index_url]:
 			soup = Soup(url).get()
 			for tag in soup.find_all(href=re.compile("index"), title=True):
-				book = Book(product_page_url=tag["href"].replace("../../..", "http://books.toscrape.com/catalogue"))
+				book = Book(product_page_url=tag["href"].replace("../../..", f"{URL}catalogue"))
 				book.get_data()
 				self.books.append(book)
 		print(f"{len(self.books)} book(s) found in {self.name}.")

@@ -1,50 +1,55 @@
 import views.view
 import sys
-from multiprocessing import Pool
 from datetime import datetime
 from PySide6.QtWidgets import QApplication
+from multiprocessing import Pool
 
-from models.book import Book
 from models.category import Category
-from models.url import Url
+from models.url import Booktoscrape
 from models.folder import Folder
 from models.constants import URL, CSV_FOLDER, IMG_FOLDER
 
 
 class Controller:
-
-	# win = None
+	img_folder = None
+	csv_folder = None
 
 	def setup(self):
 		app = QApplication(sys.argv)
 		win = views.view.App(controller=self)
-		# self.win = win
 		win.show()
 		app.exec()
 
-	@staticmethod
-	def scrape(folder):
+	def create_folders(self, folder):
+		self.csv_folder = Folder(path=folder, name=CSV_FOLDER)
+		self.csv_folder.create()
+		self.img_folder = Folder(path=folder, name=IMG_FOLDER)
+		self.img_folder.create()
 
-		nb_books_scraped = 0
+	def scrape_category(self, category_main_url):
+		# number_books_scraped_in_category = 0
+		category = Category(index_url=category_main_url)
+		category.get_data()
+		for book in category.books:
+			book.download_pic(self.img_folder.name)
+			# number_books_scraped_in_category += 1
+		category.create_csv(self.csv_folder.name)
+
+		# return number_books_scraped_in_category
+
+	def run(self, folder):
+
+		number_total_books_scraped = 0
 		start_time = datetime.now()
-		csv_folder = Folder(path=folder, name=CSV_FOLDER)
-		csv_folder.create()
-		img_folder = Folder(path=folder, name=IMG_FOLDER)
-		img_folder.create()
+		self.create_folders(folder)
 
-		url = Url(url=URL)
+		url = Booktoscrape(url=URL)
 		url.get_categories()
-		for category_main_url in url.categories_url:
 
-			category = Category(main_url=category_main_url)
-			category.get_data()
-			for book in category.books:
-				book.download_pic(img_folder.name)
-				nb_books_scraped += 1
+		p = Pool()
+		p.map(self.scrape_category, url.categories_urls)
 
-			category.create_csv(csv_folder.name)
-
-		print(f"{nb_books_scraped} books extracted.")
+		# print(f"{number_total_books_scraped} books extracted.")
 		print(datetime.now() - start_time)
 
 

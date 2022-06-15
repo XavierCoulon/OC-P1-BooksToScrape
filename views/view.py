@@ -31,7 +31,7 @@ class App(QWidget):
 		return self.field.text()
 
 	def launch(self):
-		self.controller.scrape(self.field.text())
+		self.controller.run(self.field.text())
 
 
 if __name__ == "__main__":

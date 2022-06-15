@@ -3,7 +3,7 @@
 Openclassrooms - DA Python - Project 2.
 Scraping from "[Books to Scrape](https://books.toscrape.com/index.html)" website.
 
-Script to scrape data (including images) from all books - all categories. Creating 1 CSV file by category (directory /CSV), downloading all books' images (directory /IMG). 
+Script to run data (including images) from all books - all categories. Creating 1 CSV file by category (directory /CSV), downloading all books' images (directory /IMG). 
 
 ## Installation
 
